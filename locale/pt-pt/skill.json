@@ -1,0 +1,13 @@
+{
+  "skill_id": "ovos-skill-horoscope-readings.andlo",
+  "source": "https://github.com/andlo/ovos-skill-horoscope-readings",
+  "package_name": "ovos-skill-horoscope-readings",
+  "pip_spec": "ovos-skill-horoscope-readings",
+  "license": "GPL-3.0-or-later",
+  "author": "andlo",
+  "name": "Horóscopo (fornecedor)",
+  "description": "Lê em voz alta o horóscopo diário do zodíaco. Fornecedor para ovos-common-reading-pipeline-plugin. Sem interface de voz autónoma.",
+  "examples": [],
+  "tags": ["entertainment", "horoscope", "astrology", "zodiac", "provider"],
+  "icon": "https://raw.githubusercontent.com/andlo/ovos-skill-horoscope-readings/main/book-512.png"
+}

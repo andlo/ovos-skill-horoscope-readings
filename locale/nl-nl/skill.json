@@ -1,0 +1,13 @@
+{
+  "skill_id": "ovos-skill-horoscope-readings.andlo",
+  "source": "https://github.com/andlo/ovos-skill-horoscope-readings",
+  "package_name": "ovos-skill-horoscope-readings",
+  "pip_spec": "ovos-skill-horoscope-readings",
+  "license": "GPL-3.0-or-later",
+  "author": "andlo",
+  "name": "Horoscoop (aanbieder)",
+  "description": "Leest de dagelijkse sterrenbeeldhoroscoop hardop voor. Aanbieder voor ovos-common-reading-pipeline-plugin. Geen zelfstandige spraakinterface.",
+  "examples": [],
+  "tags": ["entertainment", "horoscope", "astrology", "zodiac", "provider"],
+  "icon": "https://raw.githubusercontent.com/andlo/ovos-skill-horoscope-readings/main/book-512.png"
+}

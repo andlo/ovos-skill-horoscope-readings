@@ -1,0 +1,13 @@
+{
+  "skill_id": "ovos-skill-horoscope-readings.andlo",
+  "source": "https://github.com/andlo/ovos-skill-horoscope-readings",
+  "package_name": "ovos-skill-horoscope-readings",
+  "pip_spec": "ovos-skill-horoscope-readings",
+  "license": "GPL-3.0-or-later",
+  "author": "andlo",
+  "name": "Horoskop (udbyder)",
+  "description": "Læser dagens stjernetegns-horoskop højt. Udbyder til ovos-common-reading-pipeline-plugin. Ingen selvstændig stemmegrænseflade.",
+  "examples": [],
+  "tags": ["entertainment", "horoscope", "astrology", "zodiac", "provider"],
+  "icon": "https://raw.githubusercontent.com/andlo/ovos-skill-horoscope-readings/main/book-512.png"
+}
