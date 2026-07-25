@@ -8,9 +8,8 @@
   "name": "Horoskop (udbyder)",
   "description": "Læser dagens stjernetegns-horoskop højt. Udbyder til ovos-common-reading-pipeline-plugin. Ingen selvstændig stemmegrænseflade.",
   "examples": [
-    "Læs mit horoskop",
-    "Hvad er dagens horoskop",
-    "Fortæl mig mit horoskop"
+    "Fortæl mig en historie om løve horoskop",
+    "Fortæl mig en historie om vædder horoskop"
   ],
   "tags": [
     "entertainment",
