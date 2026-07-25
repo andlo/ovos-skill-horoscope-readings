@@ -8,9 +8,8 @@
   "name": "Horoscope Readings (provider)",
   "description": "Reads daily zodiac horoscopes aloud. Provider for ovos-common-reading-pipeline-plugin - no standalone voice interface.",
   "examples": [
-    "Tell me an article about leo horoscope",
-    "Read me a report about the taurus horoscope",
-    "Tell me an article about the aries horoscope"
+    "Tell me a horoscope about leo",
+    "Read me a horoscope about taurus"
   ],
   "tags": [
     "entertainment",
