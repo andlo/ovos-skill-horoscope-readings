@@ -7,7 +7,18 @@
   "author": "andlo",
   "name": "Horoscope Readings (provider)",
   "description": "Reads daily zodiac horoscopes aloud. Provider for ovos-common-reading-pipeline-plugin - no standalone voice interface.",
-  "examples": [],
-  "tags": ["entertainment", "horoscope", "astrology", "zodiac", "provider"],
+  "examples": [
+    "Read me my horoscope",
+    "What is my horoscope",
+    "Read me today's horoscope",
+    "Tell me my horoscope"
+  ],
+  "tags": [
+    "entertainment",
+    "horoscope",
+    "astrology",
+    "zodiac",
+    "provider"
+  ],
   "icon": "https://raw.githubusercontent.com/andlo/ovos-skill-horoscope-readings/main/book-512.png"
 }
