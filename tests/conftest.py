@@ -27,6 +27,7 @@ def skill(monkeypatch):
     s._bus = MagicMock()
     s._settings = {}
     monkeypatch.setattr(HoroscopeReadings, "lang", "en-us", raising=False)
+    monkeypatch.setattr(HoroscopeReadings, "native_langs", ["en-us"], raising=False)
     s.res_dir = str(Path(__file__).resolve().parents[1])  # repo root, holds locale/
     s._lang_resources = {}  # OVOSSkill.resources' internal per-language cache
     s.index = {sign: sign for sign in ZODIAC_SIGNS}

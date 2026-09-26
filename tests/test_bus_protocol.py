@@ -6,6 +6,7 @@ from conftest import COMMON_READING_SEARCH_RESPONSE, COMMON_READING_FETCH_CONTEN
 
 def make_message(data=None):
     m = MagicMock()
+    m.context = {}
     m.data = data or {}
     m.reply = MagicMock(side_effect=lambda mtype, d: MagicMock(msg_type=mtype, data=d))
     return m
