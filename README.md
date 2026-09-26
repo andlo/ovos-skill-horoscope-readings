@@ -32,6 +32,14 @@ scraping).
 
 ## Translation - two different mechanisms for two different things
 
+**Only in configured languages.** It translates only into the languages
+this installation is configured for: the device's own `lang` plus
+`secondary_langs` in `mycroft.conf`. A search or ping in any other
+language gets no answer, so a request in a language nobody here speaks
+never loads a translation model or translates the title catalogue. A
+HiveMind hub serving users in several languages lists them in
+`secondary_langs`.
+
 1. **Zodiac sign names** ("Leo", "Løven", "Löwe", "Lion", ...) - fixed,
    well-known, enumerable terms, bundled per-language in
    `locale/<lang>/zodiac_signs.json` rather than relying on a live

@@ -49,6 +49,7 @@ ovos-common-reading-pipeline-plugin#26.
 """
 
 from ovos_workshop.skills import OVOSSkill
+from ovos_bus_client.session import SessionManager
 from ovos_utils.parse import match_one
 from ovos_utils import classproperty
 from ovos_utils.process_utils import RuntimeRequirements
@@ -82,6 +83,17 @@ CONTENT_TYPES = ["horoscope", "astrology"]
 COLLECTION_HINT_THRESHOLD = 0.85
 COLLECTION_NAME = "Daily Horoscope"
 SOURCE_NAME = "freehoroscopeapi.com"
+
+
+def primary_subtag(lang):
+    """'en-US', 'en_gb', 'EN' -> 'en'."""
+    return (lang or "").replace("_", "-").split("-")[0].lower()
+
+
+def configured_languages(langs):
+    """Primary subtags of the languages an installation is configured
+    for (core lang + secondary_langs): ['en-US', 'da-DK'] -> {'en', 'da'}."""
+    return {primary_subtag(lang) for lang in langs or [] if lang}
 
 class HoroscopeReadings(OVOSSkill):
 
@@ -192,7 +204,30 @@ class HoroscopeReadings(OVOSSkill):
                 return name, 1.0
         return match_one(phrase, list(names.values()))
 
+
+    @staticmethod
+    def _request_lang(message):
+        """The language a request was made in, or None when it does not
+        say: the pipeline plugin's own 'lang' field first, then the
+        language of the session the request was forwarded from (a
+        HiveMind client's, on a hub). An older plugin sends neither."""
+        lang = message.data.get("lang") or message.context.get("lang")
+        if not lang and message.context.get("session"):
+            lang = SessionManager.get(message).lang
+        return lang or None
+
+    def _serves(self, lang):
+        """This provider translates, so it could answer in any language -
+        but it only does for the languages this installation is
+        configured for (the device's lang plus secondary_langs in
+        mycroft.conf). A request in any other language would otherwise
+        load a translation model and translate the whole catalogue of
+        titles for a language nobody here speaks."""
+        return primary_subtag(lang) in configured_languages(self.native_langs)
+
     def handle_search(self, message):
+        if not self._serves(self._request_lang(message) or self.lang):
+            return  # not a language this installation is configured for
         collection_hint = message.data.get("collection_hint")
         if not self._matches_collection_hint(collection_hint):
             return
@@ -240,6 +275,9 @@ class HoroscopeReadings(OVOSSkill):
         called by the pipeline plugin on its rare 0-candidates path
         (see ovos-common-reading-pipeline-plugin#2), never on every
         search."""
+        lang = self._request_lang(message)
+        if lang and not self._serves(lang):
+            return
         self.bus.emit(message.reply(COMMON_READING_PONG, {
             "skill_id": self.skill_id,
             "collection": COLLECTION_NAME,
