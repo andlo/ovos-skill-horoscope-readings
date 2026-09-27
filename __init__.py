@@ -59,6 +59,21 @@ import json
 import re
 
 
+def _user_agent():
+    """Say who is asking. Some sites answer python-requests' default
+    User-Agent with 403 (365tomorrows.com behind Cloudflare does), and a
+    descriptive one is what sites ask automated clients to send."""
+    try:
+        from importlib.metadata import version
+        ver = version("ovos-skill-horoscope-readings")
+    except Exception:
+        ver = "unknown"
+    return f"ovos-skill-horoscope-readings/{ver} (+https://github.com/andlo/ovos-skill-horoscope-readings)"
+
+
+HTTP_HEADERS = {"User-Agent": _user_agent()}
+
+
 class HoroscopeFetchError(Exception):
     """Raised when the horoscope API could not be reached or returned
     something unusable."""
@@ -142,7 +157,7 @@ class HoroscopeReadings(OVOSSkill):
         """Live API call - no caching, since the text is different
         every day and the request is cheap/fast (unlike scraping)."""
         try:
-            r = requests.get(HOROSCOPE_API_URL, params={"sign": sign}, timeout=10)
+            r = requests.get(HOROSCOPE_API_URL, params={"sign": sign}, timeout=10, headers=HTTP_HEADERS)
             r.raise_for_status()
             data = r.json()
         except requests.RequestException as e:

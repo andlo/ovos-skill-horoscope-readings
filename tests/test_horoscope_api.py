@@ -28,7 +28,7 @@ def test_get_horoscope_text_success(skill, monkeypatch):
 def test_get_horoscope_text_passes_sign_param(skill, monkeypatch):
     captured = {}
 
-    def fake_get(url, params=None, timeout=None):
+    def fake_get(url, params=None, timeout=None, headers=None):
         captured["params"] = params
         return _fake_response({"data": {"horoscope": "..."}})
 
