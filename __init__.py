@@ -50,6 +50,8 @@ ovos-common-reading-pipeline-plugin#26.
 
 from ovos_workshop.skills import OVOSSkill
 from ovos_bus_client.session import SessionManager
+from ovos_bus_client.message import Message
+from pathlib import Path
 from ovos_utils.parse import match_one
 from ovos_utils import classproperty
 from ovos_utils.process_utils import RuntimeRequirements
@@ -74,6 +76,22 @@ def _user_agent():
 HTTP_HEADERS = {"User-Agent": _user_agent()}
 
 
+def _read_voc(path):
+    """Phrases in a .voc file: one per line, "a|b" and "(a|b) c" expanded
+    the simple way ovos-workshop does for single groups."""
+    phrases = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = re.match(r"^(.*)\(([^)]*)\)(.*)$", line)
+        if m:
+            phrases += [" ".join(f"{m.group(1)}{alt}{m.group(3)}".split()) for alt in m.group(2).split("|")]
+        else:
+            phrases += [alt.strip() for alt in line.split("|") if alt.strip()]
+    return phrases
+
+
 class HoroscopeFetchError(Exception):
     """Raised when the horoscope API could not be reached or returned
     something unusable."""
@@ -85,6 +103,12 @@ COMMON_READING_FETCH_CONTENT = "ovos.common_reading.fetch_content"  # + ".{this_
 COMMON_READING_FETCH_CONTENT_RESPONSE = "ovos.common_reading.fetch_content.response"
 COMMON_READING_PING = "ovos.common_reading.ping"
 COMMON_READING_PONG = "ovos.common_reading.pong"
+# vocabulary: the words people use for what this provider can read, one
+# message per language it serves - announced when it loads and whenever
+# the pipeline asks (see the pipeline plugin's README, "4. Vocabulary").
+# Without it the pipeline (0.3.0+) never sends a request here.
+COMMON_READING_VOCABULARY = "ovos.common_reading.vocabulary"
+COMMON_READING_VOCABULARY_GET = "ovos.common_reading.vocabulary.get"
 
 HOROSCOPE_API_URL = "https://freehoroscopeapi.com/api/v1/get-horoscope/daily"
 ZODIAC_SIGNS = ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra",
@@ -133,6 +157,8 @@ class HoroscopeReadings(OVOSSkill):
         self.add_event(COMMON_READING_SEARCH, self.handle_search)
         self.add_event(f"{COMMON_READING_FETCH_CONTENT}.{self.skill_id}", self.handle_fetch_content)
         self.add_event(COMMON_READING_PING, self.handle_ping)
+        self.add_event(COMMON_READING_VOCABULARY_GET, self.handle_vocabulary_get)
+        self._announce_vocabulary()
 
     def _load_collection_aliases(self):
         """Same pattern as ovos-skill-ovosblog: loads
@@ -284,6 +310,50 @@ class HoroscopeReadings(OVOSSkill):
             return
         text, _ = self._maybe_translate_text(text, self.lang)
         self.bus.emit(message.reply(COMMON_READING_FETCH_CONTENT_RESPONSE, {"paragraphs": [text]}))
+
+    def _vocabulary_langs(self):
+        return sorted(configured_languages(self.native_langs))
+
+    def _locale_words(self, name, lang):
+        """The phrases of locale/<lang>/<name>.voc for a primary language
+        tag ("da"), or [] when this skill has no such file for it."""
+        base = Path(__file__).resolve().parent / "locale"
+        for folder in sorted(base.iterdir()) if base.is_dir() else []:
+            if folder.name.split("-")[0] == lang and (folder / f"{name}.voc").is_file():
+                return _read_voc(folder / f"{name}.voc")
+        return []
+
+    def _vocabulary(self, lang):
+        """The kind of text this provider serves (locale/<lang>/content_type.voc,
+        announced under its canonical name CONTENT_TYPES[0]) and its
+        collection names (collection.voc) in `lang`. No titles: they change
+        daily and are only known in the source's own language."""
+        words = self._locale_words("content_type", lang)
+        return {"content_types": {CONTENT_TYPES[0]: words} if words else {},
+                "collections": self._locale_words("collection", lang) or list(FALLBACK_COLLECTION_ALIASES)}
+
+    def _announce_vocabulary(self, langs=None, message=None):
+        """One ovos.common_reading.vocabulary per language served (and
+        asked for, when the pipeline named languages)."""
+        wanted = {str(l).lower().split("-")[0].split("_")[0] for l in (langs or [])}
+        for lang in self._vocabulary_langs():
+            if wanted and lang not in wanted:
+                continue
+            data = {"skill_id": self.skill_id, "lang": lang, **self._vocabulary(lang)}
+            msg = message.reply(COMMON_READING_VOCABULARY, data) if message else \
+                Message(COMMON_READING_VOCABULARY, data)
+            self.bus.emit(msg)
+
+    def handle_vocabulary_get(self, message):
+        self._announce_vocabulary(message.data.get("langs"), message)
+
+    def shutdown(self):
+        """The pipeline stops sending requests meant for this provider."""
+        try:
+            self.bus.emit(Message(COMMON_READING_VOCABULARY, {"skill_id": self.skill_id, "remove": True}))
+        except Exception:
+            pass
+        super().shutdown()
 
     def handle_ping(self, message):
         """Cheap 'is anyone there?' reply - no API call. Only ever

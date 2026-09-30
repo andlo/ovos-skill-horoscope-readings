@@ -30,6 +30,7 @@ def skill(monkeypatch):
     monkeypatch.setattr(HoroscopeReadings, "native_langs", ["en-us"], raising=False)
     s.res_dir = str(Path(__file__).resolve().parents[1])  # repo root, holds locale/
     s._lang_resources = {}  # OVOSSkill.resources' internal per-language cache
+    s._auto_register_entity_files = lambda *a, **k: None  # ovos-workshop >= 9.8 needs attributes __new__() bypasses
     s.index = {sign: sign for sign in ZODIAC_SIGNS}
     s._translator = None
     s._translator_failed = False
