@@ -176,8 +176,22 @@ class HoroscopeReadings(OVOSSkill):
         language we haven't bundled a translation for.
         load_json_file() returns {} (not an exception) when the file
         isn't found, so the fallback below covers that case too."""
-        names = self.resources.load_json_file("zodiac_signs.json")
-        return names or {sign: sign.capitalize() for sign in ZODIAC_SIGNS}
+        # The names of the language ASKED in, not the device's (self.resources
+        # is the device language): on an en-us device with da-dk as a
+        # secondary language, "læs løvens horoskop" must meet "Løven".
+        base = Path(__file__).resolve().parent / "locale"
+        want = primary_subtag(lang or self.lang)
+        for folder in sorted(base.iterdir()) if base.is_dir() else []:
+            path = folder / "zodiac_signs.json"
+            if primary_subtag(folder.name) == want and path.is_file():
+                try:
+                    names = json.loads(path.read_text(encoding="utf-8"))
+                except ValueError:
+                    break
+                if names:
+                    return names
+                break
+        return {sign: sign.capitalize() for sign in ZODIAC_SIGNS}
 
     def get_horoscope_text(self, sign):
         """Live API call - no caching, since the text is different
@@ -241,7 +255,8 @@ class HoroscopeReadings(OVOSSkill):
         match is found (e.g. a slightly misheard STT transcription)."""
         phrase_words = re.findall(r"\w+", phrase.lower())
         for sign, name in names.items():
-            if name.lower() in phrase_words:
+            # also the genitive: "løvens horoskop", "jomfruens", "fiskenes"
+            if name.lower() in phrase_words or name.lower() + "s" in phrase_words:
                 return name, 1.0
         return match_one(phrase, list(names.values()))
 
@@ -267,7 +282,8 @@ class HoroscopeReadings(OVOSSkill):
         return primary_subtag(lang) in configured_languages(self.native_langs)
 
     def handle_search(self, message):
-        if not self._serves(self._request_lang(message) or self.lang):
+        lang = self._request_lang(message) or self.lang
+        if not self._serves(lang):
             return  # not a language this installation is configured for
         collection_hint = message.data.get("collection_hint")
         if not self._matches_collection_hint(collection_hint):
@@ -276,7 +292,7 @@ class HoroscopeReadings(OVOSSkill):
         if not self._matches_content_type(content_type):
             return
 
-        names = self._get_zodiac_names(self.lang)
+        names = self._get_zodiac_names(lang)
         phrase = message.data.get("phrase")
         if not phrase:
             # unlike a story provider's 'surprise me', there's no such
@@ -294,7 +310,7 @@ class HoroscopeReadings(OVOSSkill):
             "collection": COLLECTION_NAME,
             "source": SOURCE_NAME,
             "confidence": confidence,
-            "machine_translated": self.lang.split("-")[0] != "en",
+            "machine_translated": primary_subtag(lang) != "en",
         }))
 
     def handle_fetch_content(self, message):
@@ -308,7 +324,7 @@ class HoroscopeReadings(OVOSSkill):
             self.log.error(f"Could not fetch horoscope for '{sign}': {e}")
             self.bus.emit(message.reply(COMMON_READING_FETCH_CONTENT_RESPONSE, {"paragraphs": []}))
             return
-        text, _ = self._maybe_translate_text(text, self.lang)
+        text, _ = self._maybe_translate_text(text, self._request_lang(message) or self.lang)
         self.bus.emit(message.reply(COMMON_READING_FETCH_CONTENT_RESPONSE, {"paragraphs": [text]}))
 
     def _vocabulary_langs(self):
